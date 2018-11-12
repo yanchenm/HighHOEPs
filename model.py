@@ -15,7 +15,7 @@ class Linear(nn.Module):
         super(Linear, self).__init__()
         self.fc1 = nn.Linear(332,500)
         self.fc2 = nn.Linear(500,200)
-        self.fc3 = nn.Linear(200,5)
+        self.fc3 = nn.Linear(200,1)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
