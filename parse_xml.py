@@ -61,28 +61,47 @@ def get_forecasts():
 
 
 def get_gen_output():
-    filename = 'PUB_GenOutputCapability_20181030_v12.xml'
-    tree = ET.parse('./GenOutputCapability/' + filename)
-    root = tree.getroot()
+    i = 10
+    columns = 'date,hour,fuel,generator,field,value'.split(',')
+    data = pd.DataFrame(columns=columns)
 
-    columns = 'date,hour,fuel,generator,field,value'
+    for filename in os.listdir('./GenOutputCapability'):
 
-    for date in root[1]:
-        print(date.tag,date.text)
-        for generator in date:
-            print('\t',generator.tag, generator.text)
-            for name_fuel_output_capability_capacity in generator:
-                print('\t\t',name_fuel_output_capability_capacity.tag, name_fuel_output_capability_capacity.text)
-                for field in name_fuel_output_capability_capacity:
-                    print('\t\t\t', field.tag, field.text)
-                    for hour_value in field:
-                        print('\t\t\t\t', hour_value.tag, hour_value.text)
+        if "_v" in filename: continue
+        if filename == 'PUB_GenOutputCapability_20181017.xml': i = 0
+        if i > 5: continue                                          #GET RID OF THIS LINE to do all files
+        i += 1
+        print(filename)
+        tree = ET.parse('./GenOutputCapability/' + filename)
+        root = tree.getroot()
 
+        for date in root[1]:
+            #print(date.tag,date.text)
+            if 'Date' in date.tag:
+                date_value = date.text
+            for generator in date:
+                #print('\t',generator.tag, generator.text)
+                for name_fuel_output_capability_capacity in generator:
+                    #print('\t\t',name_fuel_output_capability_capacity.tag, name_fuel_output_capability_capacity.text)
+                    if 'Name' in name_fuel_output_capability_capacity.tag:
+                        gen_name = name_fuel_output_capability_capacity.text
+                    if 'Fuel' in name_fuel_output_capability_capacity.tag:
+                        fuel = name_fuel_output_capability_capacity.text
+                    for field in name_fuel_output_capability_capacity:
+                        #print('\t\t\t', field.tag, field.text)
+                        field_val = field.tag.split('}')[-1]
+                        if field_val != 'Output':continue
+                        if len(field) == 1: continue
+                        hour = field[0].text
+                        MW = field[1].text
+                        #print('\t\t\t\t hour:{}'.format(hour),'MW:{}'.format(MW))
+                        data = data.append(dict(zip(columns,[date_value,hour,fuel,gen_name,field_val,MW])),ignore_index=True)
 
-
-
-
-
+    data['hour'] = data['hour'].astype(int) - 1
+    data['DateTime'] = data['date'] + ' ' + data['hour'].astype(str) + ':00'
+    data['DateTime'] = pd.to_datetime(data['DateTime'])
+    data.to_csv('GenOutputCapability.csv')
 
 if __name__ == "__main__":
     get_gen_output()
+    #get_forecasts()
