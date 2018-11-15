@@ -4,9 +4,6 @@ import pandas as pd
 from datetime import timedelta, datetime
 
 
-pd.set_option('display.max_columns', 100)
-
-
 def manipulate():
 
     curr_datetime = datetime(year=2018, month=10, day=13, hour=0)
@@ -100,8 +97,6 @@ def manipulate():
         # Hydro
         data_row['hydro_output'] = sum((gen_output.loc[gen_output.DateTime == time_str].query(
             'field == "Output" and fuel == "HYDRO"'))['value'])
-
-        # print(data_row)
 
         data = data.append(data_row, ignore_index=True)
         curr_datetime += hour
