@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 import os
 
+
 def get_forecasts():
     columns = ['update_time','MP_type','fuel_type','zone','date','hour','MW_forecast']
 
@@ -9,11 +10,11 @@ def get_forecasts():
 
     i = 0
 
-    for filename in os.listdir('./VGForecastSummary'):
+    for filename in os.listdir('./data/xml/VGForecastSummary'):
         i += 1
         if "_v" not in filename: continue
         print(filename)
-        tree = ET.parse('./VGForecastSummary/'+filename)
+        tree = ET.parse('./data/xml/VGForecastSummary/'+filename)
         root = tree.getroot()
 
         #if i > 100: break
@@ -49,15 +50,13 @@ def get_forecasts():
                                 data = data.append(d,ignore_index=True)
                                 j+=1
 
-
-
     data['hour'] = data['hour'].astype(int)-1
-    data['DateTime'] = data['date']+' ' + data['hour'].astype(str) + ':00'
+    data['DateTime'] = data['date']+ ' ' + data['hour'].astype(str) + ':00'
     data['update_time'] = pd.to_datetime(data['update_time'])
     data['update_time'] = data['update_time'].dt.ceil('h')
     data['DateTime'] = pd.to_datetime(data['DateTime'])
     data['PD_hours_back'] = (data['DateTime'] - data['update_time']).dt.components.hours
-    data.to_csv('VGForecasts.csv')
+    data.to_csv('./data/output/VGForecasts.csv')
 
 
 def get_gen_output():
@@ -65,14 +64,14 @@ def get_gen_output():
     columns = 'date,hour,fuel,generator,field,value'.split(',')
     data = pd.DataFrame(columns=columns)
 
-    for filename in os.listdir('./GenOutputCapability'):
+    for filename in os.listdir('./data/xml/GenOutputCapability'):
 
         if "_v" in filename: continue
         if filename == 'PUB_GenOutputCapability_20181017.xml': i = 0
-        if i > 5: continue                                          #GET RID OF THIS LINE to do all files
+        # if i > 5: continue                                          #GET RID OF THIS LINE to do all files
         i += 1
         print(filename)
-        tree = ET.parse('./GenOutputCapability/' + filename)
+        tree = ET.parse('./data/xml/GenOutputCapability/' + filename)
         root = tree.getroot()
 
         for date in root[1]:
@@ -100,8 +99,8 @@ def get_gen_output():
     data['hour'] = data['hour'].astype(int) - 1
     data['DateTime'] = data['date'] + ' ' + data['hour'].astype(str) + ':00'
     data['DateTime'] = pd.to_datetime(data['DateTime'])
-    data.to_csv('GenOutputCapability.csv')
+    data.to_csv('./data/output/GenOutputCapability.csv')
 
 if __name__ == "__main__":
     get_gen_output()
-    #get_forecasts()
+    get_forecasts()
