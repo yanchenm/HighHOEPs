@@ -1,6 +1,4 @@
-import os
 import pandas as pd
-
 from datetime import timedelta, datetime
 
 
@@ -8,6 +6,15 @@ def manipulate():
 
     curr_datetime = datetime(year=2018, month=10, day=13, hour=0)
     end_datetime = datetime(year=2018, month=11, day=13, hour=0)
+
+    # Data points where not all fields are populated (to be skipped)
+    broken_data = [datetime(year=2018, month=10, day=23, hour=15),
+                   datetime(year=2018, month=10, day=24, hour=9),
+                   datetime(year=2018, month=10, day=24, hour=11),
+                   datetime(year=2018, month=10, day=25, hour=9),
+                   datetime(year=2018, month=10, day=25, hour=18),
+                   datetime(year=2018, month=10, day=29, hour=11),
+                   datetime(year=2018, month=10, day=29, hour=21)]
 
     hour = timedelta(hours=1)
 
@@ -34,6 +41,11 @@ def manipulate():
 
     while not curr_datetime == end_datetime:
 
+        if (curr_datetime in broken_data) or \
+                (curr_datetime in (datetime(year=2018, month=10, day=30, hour=12), datetime(year=2018, month=11, day=1, hour=12))):
+            curr_datetime += hour
+            continue
+
         data_row = dict.fromkeys(columns)
         time_str = datetime.strftime(curr_datetime, '%Y-%m-%d %H:%M:%S')
 
@@ -47,7 +59,7 @@ def manipulate():
         # MCP
         for i in range(1, 13):
             col_name = 'mcp_{}'.format(i)
-            data_row[col_name] = float((real_mkt_price.loc[real_mkt_price.datetime == time_str].query(
+            query = float((real_mkt_price.loc[real_mkt_price.datetime == time_str].query(
                 'interval == {} and type == "ENGY" and zone == "ONZN"'.format(i)))['price'])
 
         # Predispatch price
