@@ -25,24 +25,23 @@ def train_model(train_loader, validation_loader, model, loss_fnc, optmizer, epoc
     graph_data = pd.DataFrame(columns=['epoch','training loss','validation loss'])
 
     for epoch in range(epochs):
-        accum_correct = 0
         accum_loss = 0
+        batch_count = 0
 
         for i, batch in enumerate(train_loader):
             data, labels = batch
             optmizer.zero_grad()
             predictions = model(data.float())
-            #print(predictions)
             batch_loss = loss_fnc(input=predictions,target=labels.float())
-            if i == 10: print(predictions,labels)
+            #if i == 10: print(predictions,labels)
             accum_loss += batch_loss
             batch_loss.backward()
             optmizer.step()
-            #correct = (predictions > 0.5).squeeze().long() == labels
-            #accum_correct += int(correct.sum())
+            batch_count = i
 
         #print(accum_loss,j)
-        accum_loss = accum_loss/train_loader.dataset.data.shape[0]
+        len = train_loader.dataset.data.shape[0]
+        accum_loss = accum_loss/batch_count #/len
         #training_error = 1 - accum_correct/len(train_loader.dataset.examples)
         validation_loss = evaluate_model(validation_loader,model,loss_fnc)
         print("Epoch:{} | training loss:{} | validation loss:{}"
@@ -57,6 +56,7 @@ def evaluate_model(validation_loader,model,loss_fnc):
 
     accum_correct = 0
     accum_loss = 0
+    batch_count = 0
     for i,batch in enumerate(validation_loader):
         data, labels = batch
 
@@ -64,16 +64,15 @@ def evaluate_model(validation_loader,model,loss_fnc):
 
         batch_loss = loss_fnc(input=predictions, target=labels.float())
         accum_loss += batch_loss
+        batch_count = i
 
-        #correct = (predictions > 0.5).squeeze().long() == labels
-        #accum_correct += int(correct.sum())
-
-    return accum_loss/validation_loader.dataset.data.shape[0]
+    len = validation_loader.dataset.data.shape[0]
+    return accum_loss/batch_count
 
 def load_model(lr):    #load linear model
     loss_fnc = torch.nn.MSELoss()
     Linear = LinearModel()
-    optimizer = torch.optim.SGD(Linear.parameters(),lr)
+    optimizer = torch.optim.Adam(Linear.parameters(),lr)
 
     return Linear, loss_fnc, optimizer
 
@@ -86,13 +85,14 @@ def get_train_instance(hour,data_array):
 
     a = data_array.iloc[s-4:s+6]
     a = a.values
-    a[:,19:] = a[:,19:]/1000
+
 
     outline = np.genfromtxt('train_data_shape.csv', delimiter=",",skip_header=True)
     #a = np.zeros_like(outline) #a is subbing in for a 10*51 array from the database
 
     data = a[outline == 1]
     data = data.flatten()
+    data = data.astype(float)
 
     labels = np.array([a[2,1]])
     #labels = np.array([a[:5,1]])
@@ -115,24 +115,32 @@ def load_data(batch_size,dataset,labelset):
 
 if __name__ == "__main__":
     a = pd.read_csv('final_data.csv',header=0,parse_dates=[0]) #this is example of data
-    hour = pd.to_datetime('2018-10-13 4:00')
-    dataset = []
-    labelset = []
+    hour = pd.to_datetime('2018-10-13 5:00')
+    a.iloc[:,1:] = a.iloc[:,1:].astype(float)
+
+    mean = a.iloc[:,19:].mean(0)
+    std = a.iloc[:,19:].std(0)
+    a.iloc[:,19:] = (a.iloc[:,19:] - mean) / std
+
+    a = a.sort_values('timestamp',0,0)
+    a = a.reset_index(drop=True)
+
+    dataset = np.ndarray((0,332))
+    labelset = np.ndarray((0,1))
     while hour < pd.to_datetime('2018-11-12 17:00'):
         data, labels = get_train_instance(hour, a)
         hour = hour + pd.Timedelta(hours=1)
         #print(hour)
         if type(data) != int:
-            dataset.append(data)
-            labelset.append(labels)
-    dataset = np.array(dataset)
-    labelset = np.array(labelset)#.squeeze()
-    dataset = dataset.astype(float)
-    labelset = labelset.astype(float)
+            dataset = np.vstack((dataset,data))
+            labelset = np.vstack((labelset,labels))
+
+    #dataset = np.array(dataset)
+    #labelset = np.array(labelset)#.squeeze()
 
     print('dataset created')
 
-    batch_size, lr, epochs = 25, 0.01, 50
+    batch_size, lr, epochs = 25, 0.00001, 100
 
     train_loader, val_loader = load_data(batch_size,dataset,labelset)
     print('dataloaders created')
@@ -140,12 +148,14 @@ if __name__ == "__main__":
     Linear, loss_fnc, optimizer = load_model(lr)
 
     model, graph_data = train_model(train_loader,val_loader,Linear,loss_fnc,optimizer,epochs)
-
+    torch.save(model, 'linear_model.pt')
     plt.figure()
     plt.plot(graph_data['epoch'],graph_data['training loss'],label = 'training loss')
     plt.plot(graph_data['epoch'],graph_data['validation loss'],label = 'validation loss')
     plt.legend(loc='best')
     plt.show()
+
+
 
 
 

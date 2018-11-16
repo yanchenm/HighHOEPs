@@ -1,0 +1,11 @@
+DateHour,HOEP,MCP_1,MCP_2,MCP_3,MCP_4,MCP_5,MCP_6,MCP_7,MCP_8,MCP_9,MCP_10,MCP_11,MCP_12,Price_PD-1,Price_PD-2,Price_PD-3,Price_PD-4,Price_PD-5,RT_Market_Totals_1,RT_Market_Totals_2,RT_Market_Totals_3,RT_Market_Totals_4,RT_Market_Totals_5,RT_Market_Totals_6,RT_Market_Totals_7,RT_Market_Totals_8,RT_Market_Totals_9,RT_Market_Totals_10,RT_Market_Totals_11,RT_Market_Totals_12,Market_Totals_PD-1,Market_Totals_PD-2,Market_Totals_PD-3,Market_Totals_PD-4,Market_Totals_PD-5,Wind_Output,Wind_Forecast_PD-1,Wind_Forecast_PD-2,Wind_Forecast_PD-3,Wind_Forecast_PD-4,Wind_Forecast_PD-5,Solar_Output,Solar_Forecast_PD-1,Solar_Forecast_PD-2,Solar_Forecast_PD-3,Solar_Forecast_PD-4,Solar_Forecast_PD-5,Gas_Output,Hydro_Output,Nuclear_Output
+,,,,,,,,,,,,,,,,,,1,,,,,,,,,,,,,,,,,1,,,,,,1,,,,,,1,,,
+,,,,,,,,,,,,,,,,,1,1,,,,,,,,,,,,,,,,1,1,,,,,1,1,,,,,1,1,,,
+,,,,,,,,,,,,,,,,1,1,1,,,,,,,,,,,,,,,1,1,1,,,,1,1,1,,,,1,1,1,,,
+,,,,,,,,,,,,,,,1,1,1,1,,,,,,,,,,,,,,1,1,1,1,,,1,1,1,1,,,1,1,1,1,,,
+,,1,1,1,1,1,1,1,1,1,1,1,,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,,1,1,1,1,1,,1,1,1,1,1,,1,1,1,1,1,,,
+,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
