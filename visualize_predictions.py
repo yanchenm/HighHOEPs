@@ -13,16 +13,21 @@ from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+import time
 
 model = torch.load('linear_model.pt')
 
 a = pd.read_csv('final_data.csv', header=0, parse_dates=[0])  # this is example of data
-hour = pd.to_datetime('2018-10-13 4:00')
+
+user_input = input("\nEnter a date between 2018-10-14 and 2018-11-11\n")
+
+hour = pd.to_datetime(user_input + ' 0:00')
 a.iloc[:, 1:] = a.iloc[:, 1:].astype(float)
 
 mean = a.iloc[:, 19:].mean(0)
 std = a.iloc[:, 19:].std(0)
 a.iloc[:, 19:] = (a.iloc[:, 19:] - mean) / std
+
 
 d = {}
 l = {}
@@ -40,20 +45,21 @@ while hour < pd.to_datetime('2018-11-12 17:00'):
 
 predictions = []
 for datehour in d:
-    p = float(model(d[datehour]))
+    p = model(d[datehour]).detach().numpy().astype(float)
     predictions.append(p)
     print(datehour,p,l[datehour])
 
 i = 0
-def onclick1(fig):
+def onclick(fig):
     fig.clear()
     global i
     s = int(a.timestamp[a.timestamp == list(d)[i]].index[0])
-    graph_data = a.iloc[s-4:s+6]
+    graph_data = a.iloc[s-5:s+5]
     x_axis = graph_data['timestamp'].dt.month.astype(str) + "-" + graph_data['timestamp'].dt.day.astype(str) + " "+graph_data['timestamp'].dt.hour.astype(str)
     plt.plot(x_axis,graph_data['hoep'],color = 'b')
-    plt.plot(x_axis,graph_data['price_pd_3'],linestyle = '--',dashes = (5,5),color = 'b')
-    plt.plot(x_axis.iloc[-3],predictions[i],'ro',label = 'pred = {}'.format(predictions[i]))
+    plt.plot(x_axis,graph_data['price_pd_3'],linestyle = '--',dashes = (2,5),color = 'b', label = 'PD-3 Price = {}'.format(graph_data['price_pd_3'].iloc[7]))
+    plt.plot(x_axis.iloc[7],predictions[i],'ro',label = 'pred = {}'.format(predictions[i]))#linestyle = '--',dashes = (5,5), color = 'orange',label = 'pred')
+    plt.axvline(x = x_axis.iloc[5])
     plt.legend(loc='best')
     plt.xticks(rotation=45)
     plt.ylim(-5,80)
@@ -61,6 +67,15 @@ def onclick1(fig):
     i += 1
 
 fig = plt.figure()
-fig.canvas.mpl_connect('button_press_event', lambda event: onclick1(fig))
+#fig.canvas.mpl_connect('button_press_event', lambda event: onclick(fig))
+#plt.show()
+while True:
+    #s = time.time()
+    onclick(fig)
+    #plt.show()
+    plt.pause(0.2)
+    #print(s)
+    #while (time.time() - s) < 1:pass
 
-plt.show()
+
+

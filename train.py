@@ -83,18 +83,19 @@ def get_train_instance(hour,data_array):
         return 0,0
     s = int(data_array.timestamp[data_array.timestamp == hour].index[0])
 
-    a = data_array.iloc[s-4:s+6]
+    a = data_array.iloc[s-5:s+5]
     a = a.values
 
 
     outline = np.genfromtxt('train_data_shape.csv', delimiter=",",skip_header=True)
     #a = np.zeros_like(outline) #a is subbing in for a 10*51 array from the database
-
+    outline = np.flipud(outline)
     data = a[outline == 1]
     data = data.flatten()
     data = data.astype(float)
 
-    labels = np.array([a[2,1]])
+    labels = np.array([a[7,1]])
+    labels = labels.astype(float)
     #labels = np.array([a[:5,1]])
 
     return data,labels
@@ -122,8 +123,6 @@ if __name__ == "__main__":
     std = a.iloc[:,19:].std(0)
     a.iloc[:,19:] = (a.iloc[:,19:] - mean) / std
 
-    a = a.sort_values('timestamp',0,0)
-    a = a.reset_index(drop=True)
 
     dataset = np.ndarray((0,332))
     labelset = np.ndarray((0,1))
@@ -135,12 +134,10 @@ if __name__ == "__main__":
             dataset = np.vstack((dataset,data))
             labelset = np.vstack((labelset,labels))
 
-    #dataset = np.array(dataset)
-    #labelset = np.array(labelset)#.squeeze()
 
     print('dataset created')
 
-    batch_size, lr, epochs = 25, 0.00001, 100
+    batch_size, lr, epochs = 15, 0.00001, 100
 
     train_loader, val_loader = load_data(batch_size,dataset,labelset)
     print('dataloaders created')
