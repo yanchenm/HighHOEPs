@@ -1,8 +1,15 @@
+import os
+
 import pandas as pd
 from datetime import timedelta, datetime
 
+from sklearn.preprocessing import StandardScaler
+
 
 def manipulate():
+
+    if os.path.isfile('./data/output/final_data.csv'):
+        return
 
     curr_datetime = datetime(year=2018, month=10, day=13, hour=0)
     end_datetime = datetime(year=2018, month=11, day=13, hour=0)
@@ -14,7 +21,8 @@ def manipulate():
                    datetime(year=2018, month=10, day=25, hour=9),
                    datetime(year=2018, month=10, day=25, hour=18),
                    datetime(year=2018, month=10, day=29, hour=11),
-                   datetime(year=2018, month=10, day=29, hour=21)]
+                   datetime(year=2018, month=10, day=29, hour=21),
+                   datetime(year=2018, month=11, day=12, hour=23)]
 
     hour = timedelta(hours=1)
 
@@ -42,7 +50,7 @@ def manipulate():
     while not curr_datetime == end_datetime:
 
         if (curr_datetime in broken_data) or \
-                (curr_datetime in (datetime(year=2018, month=10, day=30, hour=12), datetime(year=2018, month=11, day=1, hour=12))):
+                 datetime(year=2018, month=10, day=30, hour=12) <= curr_datetime <= datetime(year=2018, month=11, day=1, hour=12):
             curr_datetime += hour
             continue
 
@@ -59,7 +67,7 @@ def manipulate():
         # MCP
         for i in range(1, 13):
             col_name = 'mcp_{}'.format(i)
-            query = float((real_mkt_price.loc[real_mkt_price.datetime == time_str].query(
+            data_row[col_name] = float((real_mkt_price.loc[real_mkt_price.datetime == time_str].query(
                 'interval == {} and type == "ENGY" and zone == "ONZN"'.format(i)))['price'])
 
         # Predispatch price
@@ -116,5 +124,29 @@ def manipulate():
     data.to_csv('./data/output/final_data.csv', index=False)
 
 
+def normalize():
+    if os.path.isfile('./data/output/normalized_data.csv'):
+        return
+
+    data = pd.read_csv('./data/output/final_data.csv')
+
+    labels = data.timestamp
+    data = data[data.columns[1:51]]
+
+    x = data.values
+    transformer = StandardScaler()
+    normalized_x = transformer.fit_transform(x)
+
+    normalized_data = pd.DataFrame(normalized_x, columns=data.columns)
+    normalized_data['timestamp'] = labels
+
+    columns = normalized_data.columns.tolist()
+    columns = columns[-1:] + columns[:-1]
+    normalized_data = normalized_data[columns]
+
+    normalized_data.to_csv('./data/output/normalized_data.csv', index=False)
+
+
 if __name__ == '__main__':
     manipulate()
+    normalize()
