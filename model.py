@@ -10,16 +10,26 @@ import torch.nn.functional as F
 
 
 
-class Linear(nn.Module):
+class LinearModel(nn.Module):
     def __init__(self):
-        super(Linear, self).__init__()
+        super(LinearModel, self).__init__()
         self.fc1 = nn.Linear(332,500)
         self.fc2 = nn.Linear(500,200)
-        self.fc3 = nn.Linear(200,1)
+        #self.fc3 = nn.Linear(200,100)
+        self.fc4 = nn.Linear(200,1)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
+        #print(x)
+        #print(self.fc1.weight)
+        x = self.fc1(x)
+        x = F.sigmoid(x)
+        #print('1',x)
+        x = self.fc2(x)
+        #x = F.sigmoid(x)
+        #x = self.fc3(x)
+        x = F.relu(x)
+        #print('2',x)
+        x = self.fc4(x)
+        #print('3',x)
         return x
 
