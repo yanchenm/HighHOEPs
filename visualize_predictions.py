@@ -15,7 +15,8 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import time
 
-model = torch.load('linear_model.pt')
+model_type = 'rnn'
+model = torch.load('model_lstm_bydate.pt')
 
 a = pd.read_csv('final_data.csv', header=0, parse_dates=[0])  # this is example of data
 
@@ -32,7 +33,7 @@ a.iloc[:, 19:] = (a.iloc[:, 19:] - mean) / std
 d = {}
 l = {}
 while hour < pd.to_datetime('2018-11-12 17:00'):
-    data, labels = get_train_instance(hour, a)
+    data, labels = get_train_instance(hour, a, model_type)
     # print(hour)
     if type(data) != int:
         #ata = np.expand_dims(data,0)
@@ -55,27 +56,26 @@ def onclick(fig):
     global i
     s = int(a.timestamp[a.timestamp == list(d)[i]].index[0])
     graph_data = a.iloc[s-5:s+5]
-    x_axis = graph_data['timestamp'].dt.month.astype(str) + "-" + graph_data['timestamp'].dt.day.astype(str) + " "+graph_data['timestamp'].dt.hour.astype(str)
-    plt.plot(x_axis,graph_data['hoep'],color = 'b')
+    pred = predictions[i] #+ graph_data['price_pd_3'].iloc[7]
+
+    x_axis = graph_data['timestamp'].dt.month.astype(str) + "-" + graph_data['timestamp'].dt.day.astype(str) + " "+graph_data['timestamp'].dt.hour.astype(str)+":00"
+    plt.plot(x_axis,graph_data['hoep'],color = 'b',label = 'HOEP = {}'.format(graph_data['hoep'].iloc[7]))
     plt.plot(x_axis,graph_data['price_pd_3'],linestyle = '--',dashes = (2,5),color = 'b', label = 'PD-3 Price = {}'.format(graph_data['price_pd_3'].iloc[7]))
-    plt.plot(x_axis.iloc[7],predictions[i],'ro',label = 'pred = {}'.format(predictions[i]))#linestyle = '--',dashes = (5,5), color = 'orange',label = 'pred')
+    plt.plot(x_axis.iloc[7],pred,'ro',label = 'pred = {}'.format('%.2f' % pred[0,0]))
     plt.axvline(x = x_axis.iloc[5])
-    plt.legend(loc='best')
-    plt.xticks(rotation=45)
+
+    plt.legend(loc=1)
+    plt.xticks(rotation=20)
     plt.ylim(-5,80)
     plt.draw()
     i += 1
 
-fig = plt.figure()
+fig = plt.figure(figsize=(8,5))
 #fig.canvas.mpl_connect('button_press_event', lambda event: onclick(fig))
 #plt.show()
 while True:
-    #s = time.time()
     onclick(fig)
-    #plt.show()
     plt.pause(0.2)
-    #print(s)
-    #while (time.time() - s) < 1:pass
 
 
 
