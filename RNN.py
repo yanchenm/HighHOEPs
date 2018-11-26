@@ -12,9 +12,10 @@ device = torch.device('cuda:0' if use_gpu else 'cpu')
 
 class RNNDataset(data.Dataset):
 
-    def __init__(self, data, labels):
+    def __init__(self, data, labels, future):
         self.data = data
         self.labels = labels
+        self.future = future
 
     def __len__(self):
         return len(self.data)
@@ -22,8 +23,9 @@ class RNNDataset(data.Dataset):
     def __getitem__(self, index):
         features = self.data[index]
         label = self.labels[index]
+        future = self.future[index]
 
-        return features, label
+        return features, label, future
 
 
 class StatelessRNN(nn.Module):
@@ -35,9 +37,9 @@ class StatelessRNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.lstm = nn.LSTM(self.input_size, self.hidden_size)
-        self.fc = nn.Linear(self.hidden_size, 1)
+        self.fc = nn.Linear(self.hidden_size + 60, 1)
 
-    def forward(self, x):
+    def forward(self, x, future):
 
         x = x.permute(1, 0, 2)
 
@@ -49,12 +51,15 @@ class StatelessRNN(nn.Module):
         hidden = (h0, h1)
 
         output, hidden = self.lstm(x.float(), hidden)
-        result = self.fc(output[-1].float())
+
+        x = torch.cat((output[-1].float(), future.float()), dim=1)
+
+        result = self.fc(x)
 
         return result
 
 
-class encoder(nn.Module):
+class Encoder(nn.Module):
     def __init__(self, input_dim, hidden_size, steps):
         super(encoder, self).__init__()
 
@@ -100,7 +105,7 @@ class encoder(nn.Module):
         return input_weighted, input_encoded
 
 
-class decoder(nn.Module):
+class Decoder(nn.Module):
     def __init__(self, encoder_hidden_size, decoder_hidden_size, steps):
         super(decoder, self).__init__()
 

@@ -30,15 +30,17 @@ def evaluate(model, val_loader, loss_fnc):
     model.eval()
 
     for i, batch in enumerate(val_loader):
-        features, labels = batch
-        features, labels = features.to(device), labels.to(device)
+        features, labels, future = batch
+        features, labels, future = features.to(device), labels.to(device), future.to(device)
 
-        predictions = model(features)
+        predictions = model(features, future)
         batch_loss = loss_fnc(input=predictions.squeeze(), target=labels.float())
 
         accum_loss += batch_loss.item()
         batch_count = i
+
         del predictions
+        del batch_loss
 
 
     val_loss = accum_loss / batch_count
@@ -46,13 +48,14 @@ def evaluate(model, val_loader, loss_fnc):
     return val_loss
 
 
-def load_data(features, labels, batch_size):
+def load_data(features, labels, future, batch_size):
 
-    train_feats, val_feats, train_labels, val_labels = train_test_split(features, labels,
-                                                                        test_size=0.2, shuffle=False)
+    train_feats, val_feats, train_labels, val_labels, train_future, val_future = train_test_split(features, labels,
+                                                                                                  future, test_size=0.2,
+                                                                                                  shuffle=False)
 
-    train_dataset = RNNDataset(train_feats, train_labels)
-    val_dataset = RNNDataset(val_feats, val_labels)
+    train_dataset = RNNDataset(train_feats, train_labels, train_future)
+    val_dataset = RNNDataset(val_feats, val_labels, val_future)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
@@ -68,7 +71,7 @@ def load_model(type, input_dim, hidden_dim, lr):
 
     model.to(device)
 
-    loss_fnc = nn.MSELoss()
+    loss_fnc = nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
 
     return model, loss_fnc, optimizer
@@ -89,10 +92,11 @@ def plot_predictions(model_path, data_path):
     timestamps = timestamps.apply(datetime.strptime, args=('%Y-%m-%d %H:%M:%S',))
     timestamps = timestamps.tail(len(timestamps) - 49)
 
-    features, labels = window_subsample(np_data, labels, 50)
+    features, labels, future = window_subsample(test_data[test_data.columns[2:51]], labels, 50)
     features = torch.Tensor(features).to(device)
+    future = torch.Tensor(future).to(device)
 
-    predictions = model(features).squeeze()
+    predictions = model(features, future).squeeze()
     predictions = predictions.cpu().detach().numpy()
 
     print(predictions)
@@ -111,12 +115,11 @@ def train_stateless(args):
 
     # Load data
     data = pd.read_csv('./data/output/normalized_data.csv')
-    np_data = data[data.columns[2:51]].values
     labels = data['hoep'].values
 
-    features, labels = window_subsample(np_data, labels, 50)
+    features, labels, future = window_subsample(data[data.columns[2:51]], labels, 50)
 
-    train_loader, val_loader = load_data(features, labels, batch_size)
+    train_loader, val_loader = load_data(features, labels, future, batch_size)
     model, loss_fnc, optimizer = load_model(type, 49, 49, lr)
 
     # Training performance tracking
@@ -127,19 +130,19 @@ def train_stateless(args):
         batch_count = 0
         model.train()
 
-        if epoch == 500 or epoch == 1000 or epoch == 1500:
+        if epoch == 250 or epoch == 500 or epoch == 750:
             lr = lr / 10
 
             for group in optimizer.param_groups:
                 group['lr'] = lr
 
         for i, batch in enumerate(train_loader):
-            features, labels = batch
-            features, labels = features.to(device), labels.to(device)
+            features, labels, future = batch
+            features, labels, future = features.to(device), labels.to(device), future.to(device)
 
             optimizer.zero_grad()
 
-            predictions = model(features)
+            predictions = model(features, future)
             batch_loss = loss_fnc(input=predictions.squeeze(), target=labels.float())
 
             batch_loss.backward()
@@ -147,6 +150,7 @@ def train_stateless(args):
 
             accum_loss += batch_loss.item()
             batch_count = i
+
             del batch_loss
             del predictions
 
@@ -161,19 +165,17 @@ def train_stateless(args):
     torch.save(model, './models/model_stateless.pt')
     performance.to_csv('./data/output/train_performance.csv', index=False)
 
-    plot_predictions('./models/model_stateless.pt', './data/output/normalized_data.csv')
+    plot_predictions('./models/model_stateless.pt', './data/test/output/normalized_data.csv')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=10)
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch-size', type=int, default=64)
+    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--epochs', type=int, default=150)
     parser.add_argument('--type', type=str, default='stateless',
                         help="RNN type: stateless or stateful")
 
     args = parser.parse_args()
 
     train_stateless(args)
-
-
