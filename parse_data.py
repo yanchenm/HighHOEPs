@@ -5,8 +5,16 @@ import xml.etree.ElementTree as ET
 
 import pandas as pd
 
+'''
+this file contains one function for each of the reports used that parses and concatenates 
+the many .xml or .csv files into one csv file per report
+'''
+
 
 def get_real_mkt_price():
+    '''
+    this function parses the 5-minute market clearing price into one csv file
+    '''
     root = './data/csv/RealtimeMktPrice/'
     csv_columns = ['hour', 'interval', 'type', 'zone', 'price', 'code']
 
@@ -18,6 +26,8 @@ def get_real_mkt_price():
         if '_v' in filename: continue
 
         temp = pd.read_csv(root + filename, header=None, names=csv_columns, skiprows=4)
+        if filename == '.DS_Store': continue
+        if '.xml' in filename: continue
 
         print(filename)
 
@@ -31,13 +41,17 @@ def get_real_mkt_price():
 
         # Move datetime column first
         temp = temp[['datetime', 'interval', 'type', 'zone', 'price', 'code']]
-
+        temp = temp.loc[temp['zone'] == 'ONZN']
         data = data.append(temp, ignore_index=True)
 
     data.to_csv('./data/output/RealtimeMktPrice.csv', index=False)
 
 
 def get_real_mkt_totals():
+    '''
+    this function parses the 5-minute RT demand into one csv file
+    '''
+
     root = './data/csv/RealtimeMktTotals/'
     csv_columns = ['hour', 'interval', 'total_energy', 'total_10s', 'total_10n', 'total_30r', 'total_loss',
                    'total_load', 'total_disp_load', 'code']
@@ -51,6 +65,8 @@ def get_real_mkt_totals():
         if '_v' in filename: continue
 
         temp = pd.read_csv(root + filename, header=None, names=csv_columns, skiprows=4)
+        if '.xml' in filename: continue
+        if filename == '.DS_Store': continue
 
         print(filename)
 
@@ -72,6 +88,10 @@ def get_real_mkt_totals():
 
 
 def get_predisp_mkt_price():
+    '''
+    this function parses the hourly PD market price csv files into one csv file
+    '''
+
     root = './data/csv/PredispMktPrice/'
     csv_columns = ['hour', 'zero', 'type', 'zone', 'price']
 
@@ -81,6 +101,8 @@ def get_predisp_mkt_price():
 
     for filename in os.listdir(root):
         if '_v' not in filename: continue
+        if '.xml' in filename: continue
+        if filename == '.DS_Store': continue
 
         # Find creation and prediction dates and times in file
         file = open(root + filename, 'r')
@@ -120,6 +142,7 @@ def get_predisp_mkt_price():
 
         # Move datetime column first
         temp = temp[['update_datetime', 'datetime', 'type', 'zone', 'price', 'PD_hours_back']]
+        temp = temp.loc[temp['zone'] == 'ONZN']
 
         data = data.append(temp, ignore_index=True)
 
@@ -127,6 +150,10 @@ def get_predisp_mkt_price():
 
 
 def get_predisp_mkt_totals():
+    '''
+    this function parses the hourly PD market totals csv files into one csv file
+    '''
+
     root = './data/csv/PredispMktTotals/'
     csv_columns = ['hour', 'zero', 'total_energy', 'total_10s', 'total_10n', 'total_30r', 'total_loss',
                    'total_load', 'total_disp_load']
@@ -138,6 +165,8 @@ def get_predisp_mkt_totals():
 
     for filename in os.listdir(root):
         if '_v' not in filename: continue
+        if '.xml' in filename: continue
+        if filename == '.DS_Store': continue
 
         # Find creation and prediction dates and times in file
         file = open(root + filename, 'r')
@@ -177,6 +206,10 @@ def get_predisp_mkt_totals():
 
 
 def get_hoep():
+    '''
+    this function parses the daily HOEP csv files into one csv file
+    '''
+
     root = './data/csv/DispUnconsHOEP/'
     csv_columns = ['hour', 'hoep', 'source']
 
@@ -186,6 +219,8 @@ def get_hoep():
 
     for filename in os.listdir(root):
         if '_v' in filename: continue
+        if '.xml' in filename: continue
+        if filename == '.DS_Store': continue
 
         temp = pd.read_csv(root + filename, header=None, names=csv_columns, skiprows=4)
 
@@ -208,6 +243,10 @@ def get_hoep():
 
 
 def get_forecasts():
+    '''
+    this function parses the VGforecast xml files into one csv file
+    '''
+
     columns = ['update_time','MP_type','fuel_type','zone','date','hour','MW_forecast']
 
     data = pd.DataFrame(columns=columns)
@@ -218,6 +257,8 @@ def get_forecasts():
         i += 1
         if "_v" not in filename: continue
         print(filename)
+        if filename == '.DS_Store': continue
+
         tree = ET.parse('./data/xml/VGForecastSummary/'+filename)
         root = tree.getroot()
 
@@ -264,16 +305,18 @@ def get_forecasts():
 
 
 def get_gen_output():
-    i = 10
+    '''
+    this function parses the generator output xml files into one csv file
+    '''
+
     columns = 'date,hour,fuel,generator,field,value'.split(',')
     data = pd.DataFrame(columns=columns)
 
     for filename in os.listdir('./data/xml/GenOutputCapability'):
+        if filename == '.DS_Store': continue
 
         if "_v" in filename: continue
-        if filename == 'PUB_GenOutputCapability_20181017.xml': i = 0
-        # if i > 5: continue                                          #GET RID OF THIS LINE to do all files
-        i += 1
+
         print(filename)
         tree = ET.parse('./data/xml/GenOutputCapability/' + filename)
         root = tree.getroot()
@@ -307,10 +350,10 @@ def get_gen_output():
 
 
 if __name__ == '__main__':
-    get_real_mkt_price()
-    get_real_mkt_totals()
-    get_predisp_mkt_price()
-    get_predisp_mkt_totals()
-    get_hoep()
+    #get_real_mkt_price()
+    #get_real_mkt_totals()
+    #get_predisp_mkt_price()
+    #get_predisp_mkt_totals()
+    #get_hoep()
     get_gen_output()
     get_forecasts()

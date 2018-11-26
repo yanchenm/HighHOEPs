@@ -1,7 +1,7 @@
 '''
-This file contains the pytorch model(s) used in the HighHOEPs project
+This file contains the training and evaluation loops used for model(s) in the HighHOEPs project
 
-Last edit: 2018-11-11 18:30
+Last edit: 2018-11-25
 Editor: Sam Harrison
 '''
 
@@ -157,11 +157,11 @@ if __name__ == "__main__":
     model_name is appended to the name of saved files
     '''
     model_type = 'rnn'
-    model_name = 'lstm'
+    model_name = 'lstm_3layer_1'
     save = True
 
 
-    a = pd.read_csv('final_data.csv',header=0,parse_dates=[0])          #take data input
+    a = pd.read_csv('./data/output/final_data.csv',header=0,parse_dates=[0])          #take data input
     hour = pd.to_datetime('2018-10-13 5:00')
     a.iloc[:,1:] = a.iloc[:,1:].astype(float)
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     print('dataset created')
 
-    batch_size, lr, epochs = 5, 0.00001, 100
+    batch_size, lr, epochs = 3, 0.00001, 315
 
     train_loader, val_loader = load_data(batch_size,dataset,labelset)
     print('dataloaders created')
@@ -196,13 +196,14 @@ if __name__ == "__main__":
     '''
     This section trains the model, saves the trained model, and creates a plot of training and validation loss
     '''
+
     Linear, graph_data = train_model(train_loader,val_loader,Linear,loss_fnc,optimizer,epochs)
-    if save: torch.save(Linear, 'model_{}.pt'.format(model_name))
-    plt.figure(1,)
+    if save: torch.save(Linear, './outputs/model_{}.pt'.format(model_name))
+    plt.figure(1)
     plt.plot(graph_data['epoch'],graph_data['training loss'],label = 'training loss')
     plt.plot(graph_data['epoch'],graph_data['validation loss'],label = 'validation loss = {}'.format(graph_data['validation loss'].iloc[epochs-1]))
     plt.legend(loc='best')
-    if save: plt.savefig('plot_training_{}.png'.format(model_name))
+    if save: plt.savefig('./outputs/plot_training_{}.png'.format(model_name))
 
 
     '''
@@ -228,12 +229,5 @@ if __name__ == "__main__":
     plt.ylim((0,200))
     plt.xlim((0,200))
     plt.legend(loc='best')
-    if save: plt.savefig('plot_residuals_{}.png'.format(model_name))
+    if save: plt.savefig('./outputs/plot_residuals_{}.png'.format(model_name))
     plt.show()
-
-
-
-
-
-
-

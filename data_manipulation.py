@@ -5,14 +5,18 @@ from datetime import timedelta, datetime
 
 from sklearn.preprocessing import StandardScaler
 
+'''
+this file takes the individual csv files created by the parse_data.py file and merges them into one 
+csv file that can be used as model input
+'''
 
 def manipulate():
 
     if os.path.isfile('./data/output/final_data.csv'):
-        return
-
+    #    return
+        pass
     curr_datetime = datetime(year=2018, month=10, day=13, hour=0)
-    end_datetime = datetime(year=2018, month=11, day=13, hour=0)
+    end_datetime = datetime(year=2018, month=11, day=24, hour=23)
 
     # Data points where not all fields are populated (to be skipped)
     broken_data = [datetime(year=2018, month=10, day=23, hour=15),
@@ -22,7 +26,7 @@ def manipulate():
                    datetime(year=2018, month=10, day=25, hour=18),
                    datetime(year=2018, month=10, day=29, hour=11),
                    datetime(year=2018, month=10, day=29, hour=21),
-                   datetime(year=2018, month=11, day=12, hour=23)]
+                   datetime(year=2018, month=11, day=12, hour=23),]
 
     hour = timedelta(hours=1)
 
@@ -53,6 +57,13 @@ def manipulate():
         # Skip manipulation for data known to be missing
         missing_start = datetime(year=2018, month=10, day=30, hour=12)
         missing_end = datetime(year=2018, month=11, day=1, hour=12)
+
+        if (curr_datetime in broken_data) or (missing_start <= curr_datetime <= missing_end):
+            curr_datetime += hour
+            continue
+
+        missing_start = datetime(year=2018, month=11, day=13, hour=0)
+        missing_end = datetime(year=2018, month=11, day=15, hour=0)
 
         if (curr_datetime in broken_data) or (missing_start <= curr_datetime <= missing_end):
             curr_datetime += hour
@@ -131,13 +142,13 @@ def manipulate():
 
 def normalize():
     if os.path.isfile('./data/output/normalized_data.csv'):
-        return
+        pass#return
 
     data = pd.read_csv('./data/output/final_data.csv')
-
+    columns = data.columns
     # Separate timestamps from numeric data
-    labels = data.timestamp
-    data = data[data.columns[1:51]]
+    data1 = data[data.columns[:19]]
+    data = data[data.columns[19:51]]        #this will normalize only generation data, but not prices
 
     # Apply z-score standardization to normalize data
     x = data.values
@@ -145,13 +156,14 @@ def normalize():
     normalized_x = transformer.fit_transform(x)
 
     # Recombine data back into original format
-    normalized_data = pd.DataFrame(normalized_x, columns=data.columns)
-    normalized_data['timestamp'] = labels
+    normalized_data = pd.DataFrame(columns=columns)
+    normalized_data[columns[:19]] = data1
+    normalized_data[columns[19:]] = normalized_x
 
     # Move timestamp field to start of dataframe
-    columns = normalized_data.columns.tolist()
-    columns = columns[-1:] + columns[:-1]
-    normalized_data = normalized_data[columns]
+    #columns = normalized_data.columns.tolist()
+    #columns = columns[-1:] + columns[:-1]
+    #normalized_data = normalized_data[columns]
 
     normalized_data.to_csv('./data/output/normalized_data.csv', index=False)
 

@@ -89,6 +89,6 @@ def scrape_all_reports(start_date, end_date, data_type):
 
 
 if __name__ == '__main__':
-    start_date = datetime(2018, 11, 13)
+    start_date = datetime(2018, 10, 13)
     end_date = datetime(2018, 11, 24)
-    scrape_all_reports(start_date, end_date, 'test')
+    scrape_all_reports(start_date, end_date, 'data')

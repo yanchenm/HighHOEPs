@@ -1,7 +1,7 @@
 '''
 This file contains the pytorch model(s) used in the HighHOEPs project
 
-Last edit: 2018-11-11 18:00
+Last edit: 2018-11-25
 Editor: Sam Harrison
 '''
 
@@ -53,8 +53,10 @@ class RNN(nn.Module):
     def __init__(self):
         super(RNN, self).__init__()
         self.lstm = nn.LSTM(50,100,1)
-        self.fc1 = nn.Linear(400, 200)
-        self.fc2 = nn.Linear(200, 1)
+        self.fc1 = nn.Linear(400, 100)
+        self.fc2 = nn.Linear(100, 100)
+        self.fc3 = nn.Linear(100, 1)
+
 
     def forward(self, x):
         #x1 is past hours
@@ -69,6 +71,7 @@ class RNN(nn.Module):
         x1 = x1.view(batch_size,200)
         x = torch.cat((x1,x2),1)
         x = F.relu(self.fc1(x))
-        x = self.fc2(x)
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
         return x
 
