@@ -1,22 +1,22 @@
 import os
 
 import pandas as pd
+import numpy as np
 from datetime import timedelta, datetime
 
 from sklearn.preprocessing import StandardScaler
 
-'''
-this file takes the individual csv files created by the parse_data.py file and merges them into one 
-csv file that can be used as model input
-'''
+from web_scraper import scrape_all_reports
+from parse_data import *
 
-def manipulate():
 
-    if os.path.isfile('./data/output/final_data.csv'):
-    #    return
-        pass
-    curr_datetime = datetime(year=2018, month=10, day=13, hour=0)
-    end_datetime = datetime(year=2018, month=11, day=24, hour=23)
+def manipulate(root):
+
+    if os.path.isfile('{}/output/final_data.csv'.format(root)):
+        return
+
+    curr_datetime = datetime(year=2018, month=11, day=14, hour=0)
+    end_datetime = datetime(year=2018, month=11, day=24, hour=0)
 
     # Data points where not all fields are populated (to be skipped)
     broken_data = [datetime(year=2018, month=10, day=23, hour=15),
@@ -26,18 +26,23 @@ def manipulate():
                    datetime(year=2018, month=10, day=25, hour=18),
                    datetime(year=2018, month=10, day=29, hour=11),
                    datetime(year=2018, month=10, day=29, hour=21),
-                   datetime(year=2018, month=11, day=12, hour=23),]
+                   datetime(year=2018, month=11, day=12, hour=23),
+                   datetime(year=2018, month=11, day=13, hour=0),
+                   datetime(year=2018, month=11, day=13, hour=1),
+                   datetime(year=2018, month=11, day=13, hour=2),
+                   datetime(year=2018, month=11, day=13, hour=3),
+                   datetime(year=2018, month=11, day=13, hour=4)]
 
     hour = timedelta(hours=1)
 
     # Load in processed csv files
-    gen_output = pd.read_csv('./data/output/GenOutputCapability.csv')
-    forecasts = pd.read_csv('./data/output/VGForecasts.csv')
-    real_mkt_price = pd.read_csv('./data/output/RealtimeMktPrice.csv')
-    real_mkt_totals = pd.read_csv('./data/output/RealtimeMktTotals.csv')
-    predisp_mkt_price = pd.read_csv('./data/output/PredispMktPrice.csv')
-    predisp_mk_totals = pd.read_csv('./data/output/PredispMktTotals.csv')
-    hoep = pd.read_csv('./data/output/HOEP.csv')
+    gen_output = pd.read_csv('{}/output/GenOutputCapability.csv'.format(root))
+    forecasts = pd.read_csv('{}/output/VGForecasts.csv'.format(root))
+    real_mkt_price = pd.read_csv('{}/output/RealtimeMktPrice.csv'.format(root))
+    real_mkt_totals = pd.read_csv('{}/output/RealtimeMktTotals.csv'.format(root))
+    predisp_mkt_price = pd.read_csv('{}/output/PredispMktPrice.csv'.format(root))
+    predisp_mk_totals = pd.read_csv('{}/output/PredispMktTotals.csv'.format(root))
+    hoep = pd.read_csv('{}/output/HOEP.csv'.format(root))
 
     # Final data fields
     columns = ['timestamp', 'hoep', 'mcp_1', 'mcp_2', 'mcp_3', 'mcp_4', 'mcp_5', 'mcp_6', 'mcp_7', 'mcp_8', 'mcp_9',
@@ -57,13 +62,6 @@ def manipulate():
         # Skip manipulation for data known to be missing
         missing_start = datetime(year=2018, month=10, day=30, hour=12)
         missing_end = datetime(year=2018, month=11, day=1, hour=12)
-
-        if (curr_datetime in broken_data) or (missing_start <= curr_datetime <= missing_end):
-            curr_datetime += hour
-            continue
-
-        missing_start = datetime(year=2018, month=11, day=13, hour=0)
-        missing_end = datetime(year=2018, month=11, day=15, hour=0)
 
         if (curr_datetime in broken_data) or (missing_start <= curr_datetime <= missing_end):
             curr_datetime += hour
@@ -137,18 +135,18 @@ def manipulate():
         data = data.append(data_row, ignore_index=True)
         curr_datetime += hour
 
-    data.to_csv('./data/output/final_data.csv', index=False)
+    data.to_csv('{}/output/final_data.csv'.format(root), index=False)
 
 
-def normalize():
-    if os.path.isfile('./data/output/normalized_data.csv'):
-        pass#return
+def normalize(root):
+    if os.path.isfile('{}/output/normalized_data.csv'.format(root)):
+        return
 
-    data = pd.read_csv('./data/output/final_data.csv')
-    columns = data.columns
-    # Separate timestamps from numeric data
-    data1 = data[data.columns[:19]]
-    data = data[data.columns[19:51]]        #this will normalize only generation data, but not prices
+    data = pd.read_csv('{}/output/final_data.csv'.format(root))
+
+    # Separate price data (don't normalize price)
+    labels = data.iloc[:, np.r_[0:2, 14:19]]
+    data = data.iloc[:, np.r_[2:14, 19:51]]
 
     # Apply z-score standardization to normalize data
     x = data.values
@@ -156,18 +154,12 @@ def normalize():
     normalized_x = transformer.fit_transform(x)
 
     # Recombine data back into original format
-    normalized_data = pd.DataFrame(columns=columns)
-    normalized_data[columns[:19]] = data1
-    normalized_data[columns[19:]] = normalized_x
+    normalized_data = pd.DataFrame(normalized_x, columns=data.columns)
+    normalized_data = pd.concat([labels, normalized_data], axis=1)
 
-    # Move timestamp field to start of dataframe
-    #columns = normalized_data.columns.tolist()
-    #columns = columns[-1:] + columns[:-1]
-    #normalized_data = normalized_data[columns]
-
-    normalized_data.to_csv('./data/output/normalized_data.csv', index=False)
+    normalized_data.to_csv('{}/output/normalized_data.csv'.format(root), index=False)
 
 
 if __name__ == '__main__':
-    manipulate()
-    normalize()
+    manipulate('./data/test')
+    normalize('./data/test')
