@@ -42,7 +42,6 @@ def evaluate(model, val_loader, loss_fnc):
         del predictions
         del batch_loss
 
-
     val_loss = accum_loss / batch_count
 
     return val_loss
@@ -71,7 +70,7 @@ def load_model(type, input_dim, hidden_dim, lr):
 
     model.to(device)
 
-    loss_fnc = nn.L1Loss()
+    loss_fnc = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
 
     return model, loss_fnc, optimizer
@@ -86,7 +85,7 @@ def plot_predictions(model_path, data_path):
     test_data = pd.read_csv(data_path)
     np_data = test_data[test_data.columns[2:51]].values
     labels = test_data['hoep'].values
-    price_pd = test_data['price_pd_3'].tail(len(test_data) - 49).values
+    price_pd = test_data['price_pd_5'].tail(len(test_data) - 49).values
 
     timestamps = test_data['timestamp']
     timestamps = timestamps.apply(datetime.strptime, args=('%Y-%m-%d %H:%M:%S',))
@@ -120,17 +119,19 @@ def train_stateless(args):
     features, labels, future = window_subsample(data[data.columns[2:51]], labels, 50)
 
     train_loader, val_loader = load_data(features, labels, future, batch_size)
-    model, loss_fnc, optimizer = load_model(type, 49, 49, lr)
+    model, loss_fnc, optimizer = load_model(type, 49, 100, lr)
 
     # Training performance tracking
     performance = pd.DataFrame(columns=['epoch', 'train_loss', 'val_loss'])
+
+    min_val_loss = 100000
 
     for epoch in range(epochs):
         accum_loss = 0.0
         batch_count = 0
         model.train()
 
-        if epoch == 250 or epoch == 500 or epoch == 750:
+        if epoch == 50 or epoch == 100 or epoch == 150:
             lr = lr / 10
 
             for group in optimizer.param_groups:
@@ -162,7 +163,9 @@ def train_stateless(args):
 
         print("Epoch: {} | training loss: {:.4f} | validation loss: {:.4f}".format(epoch + 1, train_loss, val_loss))
 
-    torch.save(model, './models/model_stateless.pt')
+        if val_loss < min_val_loss:
+            torch.save(model, './models/model_stateless.pt')
+
     performance.to_csv('./data/output/train_performance.csv', index=False)
 
     plot_predictions('./models/model_stateless.pt', './data/test/output/normalized_data.csv')
@@ -171,7 +174,7 @@ def train_stateless(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.01)
+    parser.add_argument('--lr', type=float, default=0.1)
     parser.add_argument('--epochs', type=int, default=150)
     parser.add_argument('--type', type=str, default='stateless',
                         help="RNN type: stateless or stateful")

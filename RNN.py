@@ -37,7 +37,10 @@ class StatelessRNN(nn.Module):
         self.hidden_size = hidden_size
 
         self.lstm = nn.LSTM(self.input_size, self.hidden_size)
-        self.fc = nn.Linear(self.hidden_size + 60, 1)
+        self.fc1 = nn.Linear(self.hidden_size + 20, 32)
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout()
+        self.fc2 = nn.Linear(32, 1)
 
     def forward(self, x, future):
 
@@ -54,7 +57,8 @@ class StatelessRNN(nn.Module):
 
         x = torch.cat((output[-1].float(), future.float()), dim=1)
 
-        result = self.fc(x)
+        result = self.dropout(self.relu(self.fc1(x)))
+        result = self.fc2(result)
 
         return result
 
