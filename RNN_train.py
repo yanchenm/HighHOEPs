@@ -5,6 +5,8 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -35,11 +37,11 @@ def evaluate(model, val_loader, loss_fnc):
         batch_loss = loss_fnc(input=predictions.squeeze(), target=labels.float())
 
         accum_loss += batch_loss.item()
-
+        batch_count = i
         del predictions
-        del batch_loss
 
-    val_loss = accum_loss / len(val_loader.dataset)
+
+    val_loss = accum_loss / batch_count
 
     return val_loss
 
@@ -66,7 +68,7 @@ def load_model(type, input_dim, hidden_dim, lr):
 
     model.to(device)
 
-    loss_fnc = nn.L1Loss()
+    loss_fnc = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
 
     return model, loss_fnc, optimizer
@@ -122,7 +124,7 @@ def train_stateless(args):
 
     for epoch in range(epochs):
         accum_loss = 0.0
-
+        batch_count = 0
         model.train()
 
         if epoch == 500 or epoch == 1000 or epoch == 1500:
@@ -144,11 +146,11 @@ def train_stateless(args):
             optimizer.step()
 
             accum_loss += batch_loss.item()
-
+            batch_count = i
             del batch_loss
             del predictions
 
-        train_loss = accum_loss / len(train_loader.dataset)
+        train_loss = accum_loss / batch_count
         val_loss = evaluate(model, val_loader, loss_fnc)
 
         performance = performance.append({'epoch': epoch, 'train_loss': accum_loss, 'val_loss': val_loss},
@@ -159,17 +161,19 @@ def train_stateless(args):
     torch.save(model, './models/model_stateless.pt')
     performance.to_csv('./data/output/train_performance.csv', index=False)
 
-    plot_predictions('./models/model_stateless.pt', './data/test/output/normalized_data.csv')
+    plot_predictions('./models/model_stateless.pt', './data/output/normalized_data.csv')
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=0.01)
-    parser.add_argument('--epochs', type=int, default=2000)
+    parser.add_argument('--batch-size', type=int, default=10)
+    parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--type', type=str, default='stateless',
                         help="RNN type: stateless or stateful")
 
     args = parser.parse_args()
 
     train_stateless(args)
+
+
