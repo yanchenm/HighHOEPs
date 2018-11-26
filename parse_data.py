@@ -6,8 +6,8 @@ import xml.etree.ElementTree as ET
 import pandas as pd
 
 
-def get_real_mkt_price():
-    root = './data/csv/RealtimeMktPrice/'
+def get_real_mkt_price(root_dir):
+    root = '{}/csv/RealtimeMktPrice/'.format(root_dir)
     csv_columns = ['hour', 'interval', 'type', 'zone', 'price', 'code']
 
     data = pd.DataFrame(columns=['datetime', 'interval', 'type', 'zone', 'price', 'code'])
@@ -34,11 +34,11 @@ def get_real_mkt_price():
 
         data = data.append(temp, ignore_index=True)
 
-    data.to_csv('./data/output/RealtimeMktPrice.csv', index=False)
+    data.to_csv('{}/output/RealtimeMktPrice.csv'.format(root_dir), index=False)
 
 
-def get_real_mkt_totals():
-    root = './data/csv/RealtimeMktTotals/'
+def get_real_mkt_totals(root_dir):
+    root = '{}/csv/RealtimeMktTotals/'.format(root_dir)
     csv_columns = ['hour', 'interval', 'total_energy', 'total_10s', 'total_10n', 'total_30r', 'total_loss',
                    'total_load', 'total_disp_load', 'code']
 
@@ -68,11 +68,11 @@ def get_real_mkt_totals():
 
         data = data.append(temp, ignore_index=True)
 
-    data.to_csv('./data/output/RealtimeMktTotals.csv', index=False)
+    data.to_csv('{}/output/RealtimeMktTotals.csv'.format(root_dir), index=False)
 
 
-def get_predisp_mkt_price():
-    root = './data/csv/PredispMktPrice/'
+def get_predisp_mkt_price(root_dir):
+    root = '{}/csv/PredispMktPrice/'.format(root_dir)
     csv_columns = ['hour', 'zero', 'type', 'zone', 'price']
 
     data = pd.DataFrame(columns=['update_datetime', 'datetime', 'type', 'zone', 'price', 'PD_hours_back'])
@@ -123,11 +123,11 @@ def get_predisp_mkt_price():
 
         data = data.append(temp, ignore_index=True)
 
-    data.to_csv('./data/output/PredispMktPrice.csv', index=False)
+    data.to_csv('{}/output/PredispMktPrice.csv'.format(root_dir), index=False)
 
 
-def get_predisp_mkt_totals():
-    root = './data/csv/PredispMktTotals/'
+def get_predisp_mkt_totals(root_dir):
+    root = '{}/csv/PredispMktTotals/'.format(root_dir)
     csv_columns = ['hour', 'zero', 'total_energy', 'total_10s', 'total_10n', 'total_30r', 'total_loss',
                    'total_load', 'total_disp_load']
 
@@ -173,11 +173,11 @@ def get_predisp_mkt_totals():
 
         data = data.append(temp, ignore_index=True)
 
-    data.to_csv('./data/output/PredispMktTotals.csv', index=False)
+    data.to_csv('{}/output/PredispMktTotals.csv'.format(root_dir), index=False)
 
 
-def get_hoep():
-    root = './data/csv/DispUnconsHOEP/'
+def get_hoep(root_dir):
+    root = '{}/csv/DispUnconsHOEP/'.format(root_dir)
     csv_columns = ['hour', 'hoep', 'source']
 
     data = pd.DataFrame(columns=['datetime', 'hoep'])
@@ -204,21 +204,21 @@ def get_hoep():
 
         data = data.append(temp, ignore_index=True)
 
-    data.to_csv('./data/output/HOEP.csv', index=False)
+    data.to_csv('{}/output/HOEP.csv'.format(root_dir), index=False)
 
 
-def get_forecasts():
+def get_forecasts(root_dir):
     columns = ['update_time','MP_type','fuel_type','zone','date','hour','MW_forecast']
 
     data = pd.DataFrame(columns=columns)
 
     i = 0
 
-    for filename in os.listdir('./data/xml/VGForecastSummary'):
+    for filename in os.listdir('{}/xml/VGForecastSummary'.format(root_dir)):
         i += 1
         if "_v" not in filename: continue
         print(filename)
-        tree = ET.parse('./data/xml/VGForecastSummary/'+filename)
+        tree = ET.parse('{}/xml/VGForecastSummary/'.format(root_dir)+filename)
         root = tree.getroot()
 
         #if i > 100: break
@@ -260,22 +260,22 @@ def get_forecasts():
     data['update_time'] = data['update_time'].dt.ceil('h')
     data['DateTime'] = pd.to_datetime(data['DateTime'])
     data['PD_hours_back'] = (data['DateTime'] - data['update_time']).dt.components.hours
-    data.to_csv('./data/output/VGForecasts.csv')
+    data.to_csv('{}/output/VGForecasts.csv'.format(root_dir))
 
 
-def get_gen_output():
+def get_gen_output(root_dir):
     i = 10
     columns = 'date,hour,fuel,generator,field,value'.split(',')
     data = pd.DataFrame(columns=columns)
 
-    for filename in os.listdir('./data/xml/GenOutputCapability'):
+    for filename in os.listdir('{}/xml/GenOutputCapability'.format(root_dir)):
 
         if "_v" in filename: continue
         if filename == 'PUB_GenOutputCapability_20181017.xml': i = 0
         # if i > 5: continue                                          #GET RID OF THIS LINE to do all files
         i += 1
         print(filename)
-        tree = ET.parse('./data/xml/GenOutputCapability/' + filename)
+        tree = ET.parse('{}/xml/GenOutputCapability/'.format(root_dir) + filename)
         root = tree.getroot()
 
         for date in root[1]:
@@ -303,14 +303,14 @@ def get_gen_output():
     data['hour'] = data['hour'].astype(int) - 1
     data['DateTime'] = data['date'] + ' ' + data['hour'].astype(str) + ':00'
     data['DateTime'] = pd.to_datetime(data['DateTime'])
-    data.to_csv('./data/output/GenOutputCapability.csv')
+    data.to_csv('{}/output/GenOutputCapability.csv'.format(root_dir))
 
 
 if __name__ == '__main__':
-    get_real_mkt_price()
-    get_real_mkt_totals()
-    get_predisp_mkt_price()
-    get_predisp_mkt_totals()
-    get_hoep()
-    get_gen_output()
-    get_forecasts()
+    get_real_mkt_price('./data/test')
+    get_real_mkt_totals('./data/test')
+    get_predisp_mkt_price('./data/test')
+    get_predisp_mkt_totals('./data/test')
+    get_hoep('./data/test')
+    get_gen_output('./data/test')
+    get_forecasts('./data/test')
