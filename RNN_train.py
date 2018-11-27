@@ -6,7 +6,6 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import matplotlib
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -17,6 +16,8 @@ from torch.utils.data import DataLoader
 from RNN import *
 from RNN_utils import *
 
+
+matplotlib.use('TkAgg')
 
 seed = 1
 np.random.seed(seed)
@@ -104,6 +105,53 @@ def plot_predictions(model_path, data_path):
     plt.show()
 
 
+def scatter_plot(model_path, data_path):
+
+    model = torch.load(model_path)
+    model.to(device)
+    model.eval()
+
+    data = pd.read_csv(data_path)
+    labels = data['hoep'].values
+
+    pd_3 = data['price_pd_3'].values
+    pd_3 = pd_3[50:]
+
+    features, labels, future = window_subsample(data[data.columns[2:51]], labels, 50)
+
+    train_feats, val_feats, train_labels, \
+    val_labels, train_future, val_future, train_pd, val_pd = train_test_split(features, labels, future, pd_3,
+                                                                              test_size=0.3, random_state=1)
+
+    features = torch.Tensor(val_feats).to(device)
+    future = torch.Tensor(val_future).to(device)
+
+    predictions = model(features, future).squeeze()
+    predictions = predictions.cpu().detach().numpy()
+
+    res_graph = pd.DataFrame({'hoep': val_labels, 'PD-3': val_pd, 'model_pred': predictions})
+
+    plt.figure(2, figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    sse = ((res_graph['hoep'] - res_graph['PD-3']) ** 2).sum()
+    plt.scatter(res_graph['hoep'], res_graph['PD-3'], s=5, label="sse = {}".format(sse))
+    plt.xlabel('hoep')
+    plt.ylabel('ieso PD-3 price')
+    plt.ylim((0, 200))
+    plt.xlim((0, 200))
+    plt.legend(loc='best')
+    plt.subplot(1, 2, 2)
+    sse = ((res_graph['hoep'] - res_graph['model_pred']) ** 2).sum()
+    plt.scatter(res_graph['hoep'], res_graph['model_pred'], s=5, label="sse = {}".format(sse))
+    plt.ylabel('model prediction')
+    plt.xlabel('hoep')
+    plt.ylim((0, 200))
+    plt.xlim((0, 200))
+    plt.legend(loc='best')
+    plt.savefig('./fig/plot_residuals_{}.png'.format('stateless_rnn'))
+    plt.show()
+
+
 def train_stateless(args):
 
     # Extract arguments
@@ -119,7 +167,7 @@ def train_stateless(args):
     features, labels, future = window_subsample(data[data.columns[2:51]], labels, 50)
 
     train_loader, val_loader = load_data(features, labels, future, batch_size)
-    model, loss_fnc, optimizer = load_model(type, 49, 100, lr)
+    model, loss_fnc, optimizer = load_model(type, 49, 300, lr)
 
     # Training performance tracking
     performance = pd.DataFrame(columns=['epoch', 'train_loss', 'val_loss'])
@@ -169,6 +217,7 @@ def train_stateless(args):
     performance.to_csv('./data/output/train_performance.csv', index=False)
 
     plot_predictions('./models/model_stateless.pt', './data/test/output/normalized_data.csv')
+    scatter_plot('./models/model_stateless.pt', './data/output/normalized_data.csv')
 
 
 if __name__ == "__main__":

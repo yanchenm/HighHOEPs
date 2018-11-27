@@ -6,11 +6,11 @@ def window_subsample(features, labels, window_length=5):
 
     num_data = features.shape[0]
     num_features = features.shape[1]
-    num_windows = num_data - window_length - 4
+    num_windows = num_data - window_length + 1
 
     data = []
     future = []
-    labels = labels[window_length:len(labels)-5]
+    labels = labels[window_length:]
 
     np_features = features.values
 
