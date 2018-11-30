@@ -13,10 +13,11 @@ from parse_data import *
 def manipulate(root):
 
     if os.path.isfile('{}/output/final_data.csv'.format(root)):
-        return
+        pass#return
 
-    curr_datetime = datetime(year=2018, month=11, day=14, hour=0)
-    end_datetime = datetime(year=2018, month=11, day=24, hour=0)
+    curr_datetime = datetime(year=2017, month=1, day=1, hour=6)
+    #end_datetime = datetime(year=2017, month=1, day=2, hour=1)
+    end_datetime = datetime(year=2017, month=12, day=31, hour=23)
 
     # Data points where not all fields are populated (to be skipped)
     broken_data = [datetime(year=2018, month=10, day=23, hour=15),
@@ -37,7 +38,12 @@ def manipulate(root):
 
     # Load in processed csv files
     gen_output = pd.read_csv('{}/output/GenOutputCapability.csv'.format(root))
+    gen_output = gen_output.dropna(0)
+
     forecasts = pd.read_csv('{}/output/VGForecasts.csv'.format(root))
+    forecasts = forecasts.dropna(0)
+    forecasts['DateTime'] = pd.to_datetime(forecasts['DateTime'])
+
     real_mkt_price = pd.read_csv('{}/output/RealtimeMktPrice.csv'.format(root))
     real_mkt_totals = pd.read_csv('{}/output/RealtimeMktTotals.csv'.format(root))
     predisp_mkt_price = pd.read_csv('{}/output/PredispMktPrice.csv'.format(root))
@@ -104,11 +110,12 @@ def manipulate(root):
 
         # Wind
         data_row['wind_output'] = sum((gen_output.loc[gen_output.DateTime == time_str].query(
-            'field == "Output" and fuel == "WIND"'))['value'])
+            'field == "Output" and fuel == "WIND"'))['value'].astype(float))
 
         for i in range(1, 6):
+            time_str1 = pd.to_datetime(time_str)
             col_name = 'wind_pd{}'.format(i)
-            data_row[col_name] = float((forecasts.loc[forecasts.DateTime == time_str].query(
+            data_row[col_name] = float((forecasts.loc[forecasts.DateTime == time_str1].query(
                 'zone == "OntarioTotal" and PD_hours_back == {} and fuel_type == "Wind"'.format(i)))['MW_forecast'])
 
         # Solar
@@ -122,7 +129,7 @@ def manipulate(root):
 
         # Gas
         data_row['gas_output'] = sum((gen_output.loc[gen_output.DateTime == time_str].query(
-            'field == "Output" and fuel == "GAS"'))['value'])
+            'field == "Output" and fuel == "GAS"'))['value'].astype(float))
 
         # Nuclear
         data_row['nuclear_output'] = sum((gen_output.loc[gen_output.DateTime == time_str].query(
@@ -132,7 +139,8 @@ def manipulate(root):
         data_row['hydro_output'] = sum((gen_output.loc[gen_output.DateTime == time_str].query(
             'field == "Output" and fuel == "HYDRO"'))['value'])
 
-        data = data.append(data_row, ignore_index=True)
+        data.loc[len(data)] = data_row
+        #data = data.append(data_row, ignore_index=True)
         curr_datetime += hour
 
     data.to_csv('{}/output/final_data.csv'.format(root), index=False)
@@ -161,5 +169,5 @@ def normalize(root):
 
 
 if __name__ == '__main__':
-    manipulate('./data/test')
-    normalize('./data/test')
+    manipulate('./data/documents')
+    #normalize('./data/documents')
