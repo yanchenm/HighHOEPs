@@ -1,31 +1,29 @@
 '''
 this is a file to visualize model outputs
+
+update lines 16, 17, and 18 to select a different model
 '''
-from train import *
+from train_linear_and_LSTM import *
 import torch
 from model import *
 import pandas as pd
 import numpy as np
-import datetime as dt
 from linear_dataset import *
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-import time
 
 model_type = 'rnn'
-model = torch.load('./outputs/model_lstm_3layer.pt')
-model1 = torch.load('./outputs/model_lstm_3layer_L1.pt')
+model = torch.load('./models/model_lstm_3layer.pt')
+model1 = torch.load('./models/model_lstm_3layer_L1.pt')
 
 
 a = pd.read_csv('./data/output/final_data.csv', header=0, parse_dates=[0])
 
-#user_input = input("\nEnter a date between 2018-11-14 and 2018-11-11\n")
+user_input = input("\nEnter a date between 2018-11-15 and 2018-11-23\n")
 
-#hour = pd.to_datetime(user_input + ' 0:00')
-hour = pd.to_datetime('2018-11-15 6:00')
+hour = pd.to_datetime(user_input + ' 0:00')
+#hour = pd.to_datetime('2018-11-15 5:00')
 
 a.iloc[:, 1:] = a.iloc[:, 1:].astype(float)
 
@@ -36,9 +34,8 @@ a.iloc[:, 19:] = (a.iloc[:, 19:] - mean) / std
 
 d = {}
 l = {}
-while hour < pd.to_datetime('2018-11-24 16:00'):
+while hour < pd.to_datetime('2018-11-24 16:00'):            # get formatted data instances and labels
     data, labels = get_train_instance(hour, a, model_type)
-    # print(hour)
     if type(data) != int:
         data = torch.tensor(data).float()
         d[hour] = data
@@ -47,7 +44,8 @@ while hour < pd.to_datetime('2018-11-24 16:00'):
 
 predictions = []
 big_graph=[]
-for datehour in d:
+
+for datehour in d:                                          # make predictions
     p = model(d[datehour]).detach().numpy().astype(float)
     p1 = model1(d[datehour]).detach().numpy().astype(float)
 
@@ -55,14 +53,8 @@ for datehour in d:
     big_graph.append([datehour,p[0],l[datehour]])
     print(datehour,p,p1,l[datehour])
 
-pred = [[item[0].squeeze() for item in predictions]]
-pred = np.array(pred)
 big_graph = np.array(big_graph)
 fig = plt.figure(figsize=(15,5))
-s = int(a.timestamp[a.timestamp == pd.to_datetime('2018-11-15 6:00')].index[0])
-graph_data = a.iloc[s:]
-x_axis = graph_data['timestamp'].dt.month.astype(str) + "-" + graph_data['timestamp'].dt.day.astype(str) + " " + \
-         graph_data['timestamp'].dt.hour.astype(str) + ":00"
 plt.plot(big_graph[:,0],big_graph[:,1],linestyle = '--',dashes = (1,1),label = 'model predictions')
 plt.plot(big_graph[:,0],big_graph[:,2],label = 'HOEP')
 plt.xticks([])
@@ -93,8 +85,7 @@ def onclick(fig):
     i += 1
 
 fig = plt.figure(figsize=(8,5))
-#fig.canvas.mpl_connect('button_press_event', lambda event: onclick(fig))
-#plt.show()
+
 while True:
     onclick(fig)
     plt.pause(0.2)
