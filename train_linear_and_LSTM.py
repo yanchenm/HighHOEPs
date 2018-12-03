@@ -17,16 +17,24 @@ matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 
-def train_model(train_loader, validation_loader, model, loss_fnc, optmizer, epochs):
-    #trans the model "model" for epochs using optmizer and loss_fnc
-    #validation iterator used once/epoch
-    #returns trained model
+def train_model(train_loader, validation_loader, model, loss_fnc, optmizer, epochs, lr):
+    '''
+    trans the model "model" for epochs using optmizer and loss_fnc
+    validation loader used once/epoch
+    returns trained model, data for training graph
+    '''
 
     graph_data = pd.DataFrame(columns=['epoch','training loss','validation loss'])
 
     for epoch in range(epochs):
         accum_loss = 0
         batch_count = 0
+
+        if epoch == 100 or epoch ==130:
+            lr = lr / 10
+
+            for group in optimizer.param_groups:
+                group['lr'] = lr
 
         for i, batch in enumerate(train_loader):
             data, labels = batch
@@ -47,8 +55,9 @@ def train_model(train_loader, validation_loader, model, loss_fnc, optmizer, epoc
     return model, graph_data
 
 def evaluate_model(validation_loader,model,loss_fnc):
-    #evaluate model
-    #returns error rate and per-sample loss
+    '''
+    evaluations model using data in validation loader. Returns validation loss per batch.
+    '''
 
     accum_loss = 0
     batch_count = 0
@@ -89,6 +98,9 @@ def get_validation_residuals(validation_loader,model,model_type):
     return res_graph
 
 def load_model(lr,type):    #load linear model
+    '''
+    loads model of type "type" to be trained with learning rate lr.
+    '''
     loss_fnc = torch.nn.MSELoss()
     if type == 'linear':
         model = LinearModel()
@@ -101,8 +113,9 @@ def load_model(lr,type):    #load linear model
     return model, loss_fnc, optimizer
 
 def get_train_instance(hour,data_array,model_type):
-    # returns a 1x332 array of values to be fed into linear NN and a 1x5 array of prices
-
+    '''
+    returns a data instance for hour 'hour'. Formatting is selected dependent on model_type.
+    '''
     if True not in (data_array.timestamp == hour).values:
         return 0,0
     s = int(data_array.timestamp[data_array.timestamp == hour].index[0])
@@ -136,8 +149,6 @@ def load_data(batch_size,dataset,labelset):
 
     data_train, data_val, labels_train, labels_val = train_test_split(dataset, labelset, test_size=0.3,
                                                                       random_state=1)
-    #data_train, data_val = dataset[240:], dataset[:240]
-    #labels_train, labels_val = labelset[240:], labelset[:240]
 
     training_dataset = LinearDataset(data_train, labels_train)
     validation_dataset = LinearDataset(data_val, labels_val)
@@ -156,19 +167,18 @@ if __name__ == "__main__":
     save is True means code will save model, training loss graph, and scatter plot to working directory
     model_name is appended to the name of saved files
     '''
+
     model_type = 'rnn'
-    model_name = 'lstm_3layer_1'
+    model_name = 'lstm'
     save = True
 
-
-    a = pd.read_csv('./data/output/final_data.csv',header=0,parse_dates=[0])          #take data input
-    hour = pd.to_datetime('2018-10-13 5:00')
+    a = pd.read_csv('./data/final_data.csv',header=0,parse_dates=[0])          #take data input
+    hour = pd.to_datetime('2018-10-14 5:00')
     a.iloc[:,1:] = a.iloc[:,1:].astype(float)
 
     mean = a.iloc[:,19:].mean(0)
     std = a.iloc[:,19:].std(0)
     a.iloc[:,19:] = (a.iloc[:,19:] - mean) / std                # normalize
-
 
     if model_type == 'rnn': dataset = np.ndarray((0,10,50))
     else: dataset = np.ndarray((0,332))
@@ -178,7 +188,6 @@ if __name__ == "__main__":
     while hour < pd.to_datetime('2018-11-12 17:00'):
         data, labels = get_train_instance(hour, a, model_type)
         hour = hour + pd.Timedelta(hours=1)
-        #print(hour)
         if type(data) != int:
             dataset = np.vstack((dataset,data))
             labelset = np.vstack((labelset,labels))
@@ -186,7 +195,7 @@ if __name__ == "__main__":
 
     print('dataset created')
 
-    batch_size, lr, epochs = 3, 0.00001, 315
+    batch_size, lr, epochs = 10, 0.0001, 150
 
     train_loader, val_loader = load_data(batch_size,dataset,labelset)
     print('dataloaders created')
@@ -197,13 +206,13 @@ if __name__ == "__main__":
     This section trains the model, saves the trained model, and creates a plot of training and validation loss
     '''
 
-    Linear, graph_data = train_model(train_loader,val_loader,Linear,loss_fnc,optimizer,epochs)
-    if save: torch.save(Linear, './outputs/model_{}.pt'.format(model_name))
+    Linear, graph_data = train_model(train_loader,val_loader,Linear,loss_fnc,optimizer,epochs, lr)
+    if save: torch.save(Linear, './models/model_{}.pt'.format(model_name))
     plt.figure(1)
     plt.plot(graph_data['epoch'],graph_data['training loss'],label = 'training loss')
     plt.plot(graph_data['epoch'],graph_data['validation loss'],label = 'validation loss = {}'.format(graph_data['validation loss'].iloc[epochs-1]))
     plt.legend(loc='best')
-    if save: plt.savefig('./outputs/plot_training_{}.png'.format(model_name))
+    if save: plt.savefig('./models/plot_training_{}.png'.format(model_name))
 
 
     '''
@@ -229,5 +238,5 @@ if __name__ == "__main__":
     plt.ylim((0,200))
     plt.xlim((0,200))
     plt.legend(loc='best')
-    if save: plt.savefig('./outputs/plot_residuals_{}.png'.format(model_name))
+    if save: plt.savefig('./models/plot_residuals_{}.png'.format(model_name))
     plt.show()
